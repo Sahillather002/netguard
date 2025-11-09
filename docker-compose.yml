@@ -191,21 +191,3 @@ volumes:
   prometheus_data:
   grafana_data:
   rabbitmq_data:
-
-# Updated: 2025-07-31T10:15:00
-
-# Updated: 2025-08-01T11:00:00
-
-# Updated: 2025-08-01T15:30:00
-
-# feat(docker): create docker-compose configuration - 2025-07-31
-
-# feat(infra): add PostgreSQL and Redis services - 2025-08-01
-
-# feat(infra): add Prometheus and Grafana - 2025-08-01
-
-# feat(docker): create docker-compose configuration - 2025-07-31
-
-# feat(infra): add PostgreSQL and Redis services - 2025-08-01
-
-# feat(infra): add Prometheus and Grafana - 2025-08-01
