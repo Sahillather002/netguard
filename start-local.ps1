@@ -54,15 +54,3 @@ Write-Host "🛑 To stop: Close all PowerShell windows or press Ctrl+C in each" 
 Write-Host ""
 Write-Host "📖 Documentation: README-COMPLETE.md" -ForegroundColor Cyan
 Write-Host ""
-
-# Updated: 2025-08-03T09:30:00
-
-# Updated: 2025-10-06T10:00:00
-
-# feat(scripts): create local startup script - 2025-08-03
-
-# feat: simplify local development setup - 2025-10-06
-
-# feat(scripts): create local startup script - 2025-08-03
-
-# feat: simplify local development setup - 2025-10-06

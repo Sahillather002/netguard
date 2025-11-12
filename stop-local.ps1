@@ -28,9 +28,3 @@ foreach ($port in $ports) {
 Write-Host ""
 Write-Host "✅ All services stopped!" -ForegroundColor Green
 Write-Host ""
-
-# Updated: 2025-08-04T10:15:00
-
-# feat(scripts): create stop script - 2025-08-04
-
-# feat(scripts): create stop script - 2025-08-04

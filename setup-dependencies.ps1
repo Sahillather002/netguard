@@ -124,15 +124,3 @@ Write-Host ""
 Write-Host "🚀 You can now start the platform with:" -ForegroundColor Cyan
 Write-Host "   .\start-local.ps1" -ForegroundColor White
 Write-Host ""
-
-# Updated: 2025-08-03T11:00:00
-
-# Updated: 2025-10-06T10:00:00
-
-# feat(scripts): add dependency installation script - 2025-08-03
-
-# feat: simplify local development setup - 2025-10-06
-
-# feat(scripts): add dependency installation script - 2025-08-03
-
-# feat: simplify local development setup - 2025-10-06
