@@ -5,9 +5,3 @@ metadata:
   labels:
     name: netguard
     environment: production
-
-# Updated: 2025-09-15T09:30:00
-
-# feat(k8s): add namespace configuration - 2025-09-15
-
-# feat(k8s): add namespace configuration - 2025-09-15

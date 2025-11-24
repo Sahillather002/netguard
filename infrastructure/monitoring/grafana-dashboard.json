@@ -1,0 +1,87 @@
+{
+  "dashboard": {
+    "title": "NetGuard Security Dashboard",
+    "tags": ["security", "netguard", "ids"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Threats Detected (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(threats_detected_total[24h]))",
+            "legendFormat": "Total Threats"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Active Connections",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(active_connections)",
+            "legendFormat": "Connections"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Packets Per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(packets_captured_total[5m])",
+            "legendFormat": "{{instance}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}
+      },
+      {
+        "id": 4,
+        "title": "Threat Types Distribution",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (threat_type) (threats_detected_total)",
+            "legendFormat": "{{threat_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}
+      },
+      {
+        "id": 5,
+        "title": "API Response Time (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{endpoint}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12}
+      },
+      {
+        "id": 6,
+        "title": "System Resource Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "100 - (avg(irate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+            "legendFormat": "CPU %"
+          },
+          {
+            "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
+            "legendFormat": "Memory %"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20}
+      }
+    ],
+    "refresh": "10s",
+    "time": {"from": "now-6h", "to": "now"}
+  }
+}

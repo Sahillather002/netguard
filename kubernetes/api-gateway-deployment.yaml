@@ -69,9 +69,3 @@ spec:
     port: 8080
     targetPort: 8080
   type: LoadBalancer
-
-# Updated: 2025-09-16T10:15:00
-
-# feat(k8s): add API Gateway deployment - 2025-09-16
-
-# feat(k8s): add API Gateway deployment - 2025-09-16
