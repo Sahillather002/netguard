@@ -1,67 +1,37 @@
 package main
 
 import (
-	"net/http"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 )
-
-// Authentication middleware
-func authMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Get Authorization header
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
-			c.Abort()
-			return
-		}
-
-		// Check if it's a Bearer token
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
-			c.Abort()
-			return
-		}
-
-		token := parts[1]
-
-		// TODO: Validate JWT token
-		// TODO: Extract user info from token
-		// For now, just check if token exists
-		if token == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			c.Abort()
-			return
-		}
-
-		// Set user info in context
-		c.Set("user_id", "user_123")
-		c.Set("user_role", "admin")
-
-		c.Next()
-	}
-}
-
-// Rate limiting middleware
-func rateLimitMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// TODO: Implement rate limiting using Redis
-		// Check if client has exceeded rate limit
-		// For now, just pass through
-		c.Next()
-	}
-}
 
 // Logging middleware
 func loggingMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TODO: Log request details
-		// - Method, Path, IP, User-Agent
-		// - Response status, duration
+		// Get user info if authenticated
+		userID, _ := c.Get("user_id")
+		userEmail := ""
+		if user, exists := c.Get("user"); exists {
+			if u, ok := user.(*User); ok {
+				userEmail = u.Email
+			}
+		}
+
+		// Log after request completes
 		c.Next()
+
+		// Log activity for write operations
+		if c.Request.Method != "GET" && c.Request.Method != "OPTIONS" {
+			action := c.Request.Method
+			resource := c.FullPath()
+			status := "success"
+			if c.Writer.Status() >= 400 {
+				status = "failed"
+			}
+
+			if uid, ok := userID.(string); ok {
+				logActivity(uid, userEmail, action, resource, "", c.ClientIP(), status, nil)
+			}
+		}
 	}
 }
 

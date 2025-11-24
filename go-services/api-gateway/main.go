@@ -15,19 +15,35 @@ import (
 )
 
 func main() {
+	// Initialize sample notifications
+	initNotifications()
+
+	// Start rate limit cleanup
+	startRateLimitCleanup()
+
+	// Start cache cleanup
+	startCacheCleanup()
+
 	// Initialize Gin router
 	router := gin.Default()
 
+	// Add middlewares
+	router.Use(rateLimitMiddleware())
+	router.Use(performanceMiddleware())
+
 	// CORS configuration
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"*"}
-	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
+	config.AllowOrigins = []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:4200"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "X-API-Key", "Accept"}
+	config.ExposeHeaders = []string{"Content-Length", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"}
+	config.AllowCredentials = true
 	router.Use(cors.New(config))
 
-	// Health check endpoint
-	router.GET("/health", healthCheck)
-	router.GET("/ready", readinessCheck)
+	// Health check endpoints
+	router.GET("/health", getHealthCheck)
+	router.GET("/ready", getReadinessCheck)
+	router.GET("/system/info", getSystemInfo)
 
 	// Metrics endpoint for Prometheus
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -44,10 +60,103 @@ func main() {
 			auth.POST("/logout", logout)
 		}
 
-		// Protected routes (require authentication)
+		// Protected routes (require authentication or API key)
 		protected := v1.Group("/")
-		protected.Use(authMiddleware())
+		protected.Use(authOrAPIKeyMiddleware())
+		protected.Use(loggingMiddleware())
+		protected.Use(auditMiddleware())
 		{
+			// Rate limit status
+			protected.GET("/ratelimit", getRateLimitStatus)
+			// User profile
+			protected.GET("/me", func(c *gin.Context) {
+				user, _ := c.Get("user")
+				c.JSON(http.StatusOK, gin.H{"user": user})
+			})
+
+			// Search
+			protected.GET("/search", searchAll)
+
+			// Activity logs
+			protected.GET("/activities", listActivities)
+			protected.GET("/activities/stats", getActivityStats)
+
+			// Export endpoints
+			protected.GET("/export/alerts", exportAlerts)
+			protected.GET("/export/threats", exportThreats)
+			protected.GET("/export/firewall-rules", exportFirewallRules)
+
+			// Notifications
+			protected.GET("/notifications", listNotifications)
+			protected.PUT("/notifications/:id/read", markNotificationRead)
+			protected.POST("/notifications/read-all", markAllNotificationsRead)
+			protected.DELETE("/notifications/:id", deleteNotification)
+
+			// Analytics
+			protected.GET("/analytics/alerts", getAlertAnalytics)
+			protected.GET("/analytics/threats", getThreatAnalytics)
+			protected.GET("/analytics/firewall", getFirewallAnalytics)
+			protected.GET("/analytics/system", getSystemAnalytics)
+			protected.GET("/analytics/timeseries/:resource", getTimeSeriesData)
+
+			// Batch operations
+			protected.POST("/batch/alerts/delete", batchDeleteAlerts)
+			protected.POST("/batch/alerts/update", batchUpdateAlerts)
+			protected.POST("/batch/threats/delete", batchDeleteThreats)
+			protected.POST("/batch/firewall-rules/delete", batchDeleteFirewallRules)
+			protected.POST("/batch/firewall-rules/enable", batchEnableFirewallRules)
+
+			// API Keys
+			protected.GET("/api-keys", listAPIKeys)
+			protected.POST("/api-keys", createAPIKey)
+			protected.PUT("/api-keys/:id", updateAPIKey)
+			protected.DELETE("/api-keys/:id", revokeAPIKey)
+
+			// Webhooks
+			protected.GET("/webhooks", listWebhooks)
+			protected.POST("/webhooks", createWebhook)
+			protected.PUT("/webhooks/:id", updateWebhook)
+			protected.DELETE("/webhooks/:id", deleteWebhook)
+			protected.POST("/webhooks/:id/test", testWebhook)
+
+			// Audit Logs
+			protected.GET("/audit-logs", getAuditLogs)
+			protected.GET("/audit-logs/:id", getAuditLog)
+			protected.GET("/audit-logs/export", exportAuditLogs)
+			protected.GET("/audit-logs/stats", getAuditStats)
+
+			// Compliance
+			protected.GET("/compliance/report", generateComplianceReport)
+			protected.GET("/compliance/status", getComplianceStatus)
+			protected.GET("/compliance/checklist", getComplianceChecklist)
+
+			// Reports
+			protected.GET("/reports/security", generateSecurityReport)
+			protected.GET("/reports/threats", generateThreatReport)
+			protected.GET("/reports/network", generateNetworkReport)
+			protected.POST("/reports/schedule", scheduleReport)
+
+			// Performance
+			protected.GET("/performance/metrics", getPerformanceMetrics)
+			protected.GET("/performance/slowest", getSlowestEndpoints)
+			protected.GET("/performance/most-used", getMostUsedEndpoints)
+			protected.POST("/performance/reset", resetPerformanceMetrics)
+
+			// Backup & Restore
+			protected.POST("/backup/create", createBackup)
+			protected.GET("/backup/download", downloadBackup)
+			protected.POST("/backup/restore", restoreBackup)
+			protected.GET("/backup/info", getBackupInfo)
+
+			// Cache
+			protected.GET("/cache/stats", func(c *gin.Context) {
+				c.JSON(http.StatusOK, cache.GetStats())
+			})
+			protected.POST("/cache/clear", func(c *gin.Context) {
+				cache.Clear()
+				c.JSON(http.StatusOK, gin.H{"message": "Cache cleared"})
+			})
+
 			// Alerts endpoints
 			alerts := protected.Group("/alerts")
 			{
@@ -105,8 +214,10 @@ func main() {
 	router.POST("/graphql", graphqlHandler)
 	router.GET("/graphql", playgroundHandler)
 
-	// WebSocket endpoint for real-time updates
+	// WebSocket endpoints for real-time updates
 	router.GET("/ws", websocketHandler)
+	router.GET("/ws/stats", statsWebSocketHandler)
+	router.GET("/ws/threats", threatsWebSocketHandler)
 
 	// Create HTTP server
 	srv := &http.Server{
@@ -140,25 +251,4 @@ func main() {
 	}
 
 	log.Println("✅ Server exited")
-}
-
-// Health check handler
-func healthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status": "healthy",
-		"time":   time.Now().Unix(),
-	})
-}
-
-// Readiness check handler
-func readinessCheck(c *gin.Context) {
-	// Check database connection, Redis, etc.
-	c.JSON(http.StatusOK, gin.H{
-		"status": "ready",
-		"services": gin.H{
-			"database": "connected",
-			"redis":    "connected",
-			"rust_engine": "connected",
-		},
-	})
 }
