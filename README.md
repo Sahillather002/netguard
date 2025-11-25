@@ -76,6 +76,7 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
   -d '{"email":"admin@netguard.com","password":"password"}'
 ```
 
+
 ## 🔧 Tech Stack
 
 - **Frontend:** Next.js 15, TypeScript, Tailwind CSS
